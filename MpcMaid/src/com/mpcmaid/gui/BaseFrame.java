@@ -54,6 +54,7 @@ package com.mpcmaid.gui;
 
 import java.awt.Container;
 import java.awt.FlowLayout;
+import java.awt.Desktop;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -71,8 +72,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
-
-import apple.dts.samplecode.osxadapter.OSXAdapter;
 
 import com.mpcmaid.audio.SamplePlayer;
 
@@ -94,8 +93,8 @@ public class BaseFrame extends JFrame implements ActionListener {
 
 	protected JMenuItem docsMI, supportMI, aboutMI;
 
-	// Check that we are on Mac OS X. This is crucial to loading and using the
-	// OSXAdapter class.
+	// Check that we are on Mac OS X, where the application menu provides
+	// About, Preferences and Quit.
 	public static boolean MAC_OS_X = (System.getProperty("os.name").toLowerCase().startsWith("mac os x"));
 
 	// Ask AWT which menu modifier we should be using.
@@ -249,38 +248,46 @@ public class BaseFrame extends JFrame implements ActionListener {
 		});
 	}
 
-	// Generic registration with the Mac OS X application menu
-	// Checks the platform, then attempts to register with the Apple EAWT
-	// See OSXAdapter.java to see how this is done without directly referencing
-	// any Apple APIs
+	// Registration with the Mac OS X application menu and Finder events
+	// through java.awt.Desktop (the Apple EAWT API is no longer accessible)
 	private void registerForMacOSXEvents() {
-		if (MAC_OS_X) {
-			try {
-				// Generate and register the OSXAdapter, passing it a hash of
-				// all the methods we wish to
-				// use as delegates for various
-				// com.apple.eawt.ApplicationListener methods
-				OSXAdapter.setQuitHandler(this, getClass().getDeclaredMethod("quit", (Class[]) null));
-				OSXAdapter.setAboutHandler(this, getClass().getDeclaredMethod("about", (Class[]) null));
-				OSXAdapter.setPreferencesHandler(this, getClass().getDeclaredMethod("preferences", (Class[]) null));
-				OSXAdapter.setFileHandler(this, getClass().getDeclaredMethod("loadFile", new Class[] { String.class }));
-			} catch (Exception e) {
-				System.err.println("Error while loading the OSXAdapter:");
-				e.printStackTrace();
-			}
+		if (!MAC_OS_X || !Desktop.isDesktopSupported()) {
+			return;
+		}
+		final Desktop desktop = Desktop.getDesktop();
+		if (desktop.isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
+			desktop.setQuitHandler((e, response) -> {
+				if (quit()) {
+					response.performQuit();
+				} else {
+					response.cancelQuit();
+				}
+			});
+		}
+		if (desktop.isSupported(Desktop.Action.APP_ABOUT)) {
+			desktop.setAboutHandler(e -> about());
+		}
+		if (desktop.isSupported(Desktop.Action.APP_PREFERENCES)) {
+			desktop.setPreferencesHandler(e -> preferences());
+		}
+		if (desktop.isSupported(Desktop.Action.APP_OPEN_FILE)) {
+			desktop.setOpenFileHandler(e -> {
+				for (File file : e.getFiles()) {
+					loadFile(file.getAbsolutePath());
+				}
+			});
 		}
 	}
 
-	// General info dialog; fed to the OSXAdapter as the method to call when
-	// "About OSXAdapter" is selected from the application menu
+	// General info dialog; called when "About" is selected from the
+	// application menu
 	public void about() {
 		aboutBox.setLocation((int) this.getLocation().getX() + 22, (int) this.getLocation().getY() + 22);
 		aboutBox.setVisible(true);
 	}
 
-	// General preferences dialog; fed to the OSXAdapter as the method to call
-	// when
-	// "Preferences..." is selected from the application menu
+	// General preferences dialog; called when "Preferences..." is selected
+	// from the application menu
 	public void preferences() {
 		prefs.setLocation((int) this.getLocation().getX() + 22, (int) this.getLocation().getY() + 22);
 		prefs.setVisible(true);
@@ -289,8 +296,7 @@ public class BaseFrame extends JFrame implements ActionListener {
 	public void help() {
 	}
 
-	// General quit handler; fed to the OSXAdapter as the method to call when a
-	// system quit event occurs
+	// General quit handler; called when a system quit event occurs
 	// A quit event is triggered by Cmd-Q, selecting Quit from the application
 	// or Dock menu, or logging out
 	public boolean quit() {

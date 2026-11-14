@@ -312,6 +312,11 @@ public final class MainFrame extends BaseFrame {
 	}
 
 	public void loadFile(String path) {
+		final File file = new File(path);
+		if (file.exists()) {
+			final MainFrame newFrame = new MainFrame(file);
+			newFrame.show();
+		}
 	}
 
 	public void makeAboutDialog() {
