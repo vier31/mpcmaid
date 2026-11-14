@@ -35,12 +35,14 @@ import javax.swing.KeyStroke;
 import com.mpcmaid.pgm.Element;
 import com.mpcmaid.pgm.Layer;
 import com.mpcmaid.pgm.Pad;
+import com.mpcmaid.pgm.PadMixer;
 import com.mpcmaid.pgm.Parameter;
 import com.mpcmaid.pgm.Profile;
 import com.mpcmaid.pgm.Program;
 import com.mpcmaid.pgm.Range;
 import com.mpcmaid.pgm.Sample;
 import com.mpcmaid.pgm.Slider;
+import com.mpcmaid.pgm.Parameter.EnumType;
 import com.mpcmaid.pgm.Parameter.OffIntType;
 import com.mpcmaid.pgm.command.ExportCommand;
 import com.mpcmaid.pgm.command.MultiSampleCommand;
@@ -109,7 +111,7 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 		params.addTab("Params", makePadArea(selectedPad));
 		params.addTab("Envelope", makePadArea(selectedPad.getEnvelope()));
 		params.addTab("Filters", makeFiltersArea(selectedPad));
-		params.addTab("Mixer", makePadArea(selectedPad.getMixer()));
+		params.addTab("Mixer", makeMixerArea(selectedPad));
 		params.addTab("Sliders", makeSlidersArea());
 
 		add(params, BorderLayout.EAST);
@@ -504,6 +506,47 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 	/**
 	 * @return A Component that is also BindingCapable
 	 * 
+	 *         The mixer page of the selected pad, with an "All pads" button next
+	 *         to each parameter to set it to the same value on every pad. The
+	 *         output choices depend on the profile.
+	 */
+	private Component makeMixerArea(final Pad pad) {
+		final PadMixer mixer = pad.getMixer();
+		final WidgetPanel area = new WidgetPanel(mixer) {
+
+			protected void addWidget(final Widget widget) {
+				add(new AllPadsRow(widget));
+			}
+
+			protected void makeEnumParameter(Parameter parameter) {
+				if (parameter != PadMixer.OUTPUT) {
+					super.makeEnumParameter(parameter);
+					return;
+				}
+				final String[] outputs = new String[profile.getOutputNumber()];
+				System.arraycopy(((EnumType) parameter.getType()).getValues(), 0, outputs, 0, outputs.length);
+				addWidget(new Widget.OffIntegerField(mixer, parameter, outputs));
+			}
+
+		};
+		area.make();
+		return area;
+	}
+
+	/**
+	 * Sets the given mixer parameter of every pad to its value on the currently
+	 * selected pad
+	 */
+	private void applyMixerToAllPads(final Parameter parameter) {
+		final Object value = currentlySelectedPad.getMixer().get(parameter);
+		for (int i = 0; i < 4 * profile.getPadNumber(); i++) {
+			pgm.getPad(i).getMixer().set(parameter, value);
+		}
+	}
+
+	/**
+	 * @return A Component that is also BindingCapable
+	 * 
 	 *         Make the Widget panel and keep a reference to it in a collection
 	 *         so that we can collectively call setElement(), load() and save()
 	 *         on them
@@ -616,6 +659,44 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 
 	public String toString() {
 		return "ProgramPanel " + getProgram();
+	}
+
+	/**
+	 * Row holding a mixer widget and its "All pads" button
+	 */
+	private final class AllPadsRow extends JPanel implements BindingCapable {
+
+		private final Widget widget;
+
+		public AllPadsRow(final Widget widget) {
+			super(new BorderLayout(5, 0));
+			this.widget = widget;
+			add(widget, BorderLayout.CENTER);
+
+			final JButton allPads = new JButton("All pads");
+			allPads.setFont(SMALL_FONT);
+			allPads.setToolTipText("Set " + widget.getLabel() + " to this value on every pad");
+			allPads.addActionListener(new ActionListener() {
+
+				public void actionPerformed(ActionEvent e) {
+					// a typed value is only saved on focus loss, which a click
+					// on the button does not always cause
+					widget.save();
+					applyMixerToAllPads(widget.getParameter());
+				}
+
+			});
+			add(allPads, BorderLayout.EAST);
+		}
+
+		public void load() {
+			widget.load();
+		}
+
+		public void save() {
+			widget.save();
+		}
+
 	}
 
 	/**

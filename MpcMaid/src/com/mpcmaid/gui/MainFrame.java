@@ -373,8 +373,11 @@ public final class MainFrame extends BaseFrame {
 		// profile selection
 		final JLabel profileLabel = new JLabel("<html>MPC Profile (not effective for current windows)</html>",
 				JLabel.RIGHT);
-		final JComboBox profileCombo = new JComboBox(
-				new String[] { Profile.MPC1000.getName(), Profile.MPC500.getName() });
+		final String[] profileNames = new String[Profile.PROFILES.length];
+		for (int i = 0; i < profileNames.length; i++) {
+			profileNames[i] = Profile.PROFILES[i].getName();
+		}
+		final JComboBox profileCombo = new JComboBox(profileNames);
 		profileCombo.setEditable(false);
 		final Preferences preferences = Preferences.getInstance();
 		final String currentProfile = preferences.getProfile().getName();

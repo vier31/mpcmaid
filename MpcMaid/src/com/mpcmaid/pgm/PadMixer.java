@@ -12,8 +12,10 @@ public final class PadMixer extends BaseElement {
 	// 0 to 49=Left, 50=Center, 51 to 100=Right
 	public static final Parameter MIXER_PAN = Parameter.integer("Pan", 0x90, 0, 100);
 
-	// 0="Stereo", 1="1-2", 2="3-4"
-	public static final Parameter OUTPUT = Parameter.enumType("Output", 0x91, new String[] { "Stereo", "1-2", "3-4" });
+	// 0="Stereo", 1="1-2", 2="3-4", 3="5-6", 4="7-8" (5-6 and 7-8 only on the
+	// MPC2500); the outputs offered in the GUI depend on the Profile
+	public static final Parameter OUTPUT = Parameter.enumType("Output", 0x91, new String[] { "Stereo", "1-2", "3-4",
+			"5-6", "7-8" });
 
 	// 0="Off", 1="1", 2="2"
 	public static final Parameter FX_SEND = Parameter.enumType("FX Send", 0x92, new String[] { "Off", "1", "2" });
