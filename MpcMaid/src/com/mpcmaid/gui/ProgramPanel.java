@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.LayoutManager;
 import java.awt.event.ActionEvent;
@@ -22,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.AbstractAction;
+import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -60,19 +60,13 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 
 	private static final String[] ASSIGN_CHOICES1 = { "Cancel", "Sample", "Pad" };
 
-	private static final Font SMALL_FONT = new Font("Verdana", Font.PLAIN, 9);
-
-	private static final Font MEDIUM_FONT = new Font("Verdana", Font.PLAIN, 10);
-
-	private static final Font FONT = new Font("Verdana", Font.BOLD, 11);
-
 	protected final Profile profile;
 
 	private final File pgmFile;
 
 	private final Program pgm;
 
-	private final JButton[] padButtons = new JButton[64];
+	private final PadButton[] padButtons = new PadButton[64];
 
 	private final JTabbedPane params = new JTabbedPane();
 
@@ -105,7 +99,6 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 		// setPreferredSize(new Dimension(950, 500));
 
 		final Pad selectedPad = pgm.getPad(0);
-		params.setFont(SMALL_FONT);
 		params.setPreferredSize(new Dimension(450, 520));
 		params.addTab("Samples", makeSampleArea(selectedPad));
 		params.addTab("Params", makePadArea(selectedPad));
@@ -119,27 +112,27 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 		final JPanel padArea = new JPanel();
 		padArea.setLayout(new BoxLayout(padArea, BoxLayout.Y_AXIS));
 		final JTabbedPane banks = new JTabbedPane();
+		banks.putClientProperty("JTabbedPane.tabAreaAlignment", "fill");
 		banks.setPreferredSize(new Dimension(430, 410));
 		final int bankNumber = 4;
 		final int colNumber = profile.getColNumber();
 		final int rowNumber = profile.getRowNumber();
 		final int bankSize = profile.getPadNumber();
 		for (int k = 0; k < bankNumber; k++) {
-			final JPanel pads = new JPanel(new GridLayout(rowNumber, colNumber, 10, 10));
+			final JPanel pads = new JPanel(new GridLayout(rowNumber, colNumber, 8, 8));
+			pads.setBorder(BorderFactory.createEmptyBorder(10, 4, 4, 4));
 			final int bankOffset = bankSize * k;
 			for (int i = 0; i < rowNumber; i++) {
 				for (int j = 0; j < colNumber; j++) {
 					final int padId = bankOffset + (rowNumber - 1 - i) * colNumber + j;
 
 					selectedPad.setElementIndex(padId);
-					final JButton button = new JButton();
+					final String padName = String.valueOf((char) ('A' + k)) + (padId - bankOffset < 9 ? "0" : "")
+							+ (padId - bankOffset + 1);
+					final PadButton button = new PadButton(padName);
 					padButtons[padId] = button;
 					refreshPadButton(selectedPad);
 					pads.add(button);
-
-					button.setFont(SMALL_FONT);
-					button.setAlignmentX(LEFT_ALIGNMENT);
-					button.setAlignmentY(TOP_ALIGNMENT);
 
 					final PadListener listener = new PadListener() {
 
@@ -226,9 +219,9 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 				}
 			}
 			final char ch = (char) ('A' + k);
-			banks.addTab("     " + String.valueOf(ch) + "     ", pads);
+			banks.addTab("Bank " + String.valueOf(ch), pads);
 		}
-		final JButton lastSelected = padButtons[0];
+		final PadButton lastSelected = padButtons[0];
 		lastSelected.setSelected(true);
 		selectedPad.setElementIndex(0);// restore selected to 0
 		currentlySelectedPad = selectedPad;
@@ -237,15 +230,16 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 		// MIDI program change combo
 		final Widget.OffIntegerField progChangeCombo = new Widget.OffIntegerField(pgm, Program.MIDI_PROGRAM_CHANGE,
 				WidgetPanel.enumerate(Program.MIDI_PROGRAM_CHANGE, ""));
-		padArea.add(progChangeCombo);
+		final JPanel progChangeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		progChangeRow.add(progChangeCombo);
+		padArea.add(progChangeRow);
 		add(padArea, BorderLayout.CENTER);
 	}
 
 	private void refreshPadButton(final Pad pad) {
-		final String htmlLabel = htmlSamples(pad);
-		final JButton button = padButtons[pad.getElementIndex()];
+		final PadButton button = padButtons[pad.getElementIndex()];
 		if (button != null) {
-			button.setText(htmlLabel);
+			button.setSampleNames(sampleNames(pad));
 		}
 	}
 
@@ -378,7 +372,7 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 	}
 
 	private void selectPad(final Pad selectedPad, final int padId, final JButton button) {
-		final JButton lastSelected = padButtons[selectedPad.getElementIndex()];
+		final PadButton lastSelected = padButtons[selectedPad.getElementIndex()];
 		lastSelected.setSelected(false);
 
 		selectedPad.setElementIndex(padId);
@@ -427,30 +421,16 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 		}
 	}
 
-	private final static String htmlSamples(Pad padElement) {
-		final StringBuffer out = new StringBuffer("<html>");
-		for (int i = 0; i < padElement.getLayerNumber(); i++) {
-			final Layer sample = padElement.getLayer(i);
-			final String sampleName = shorten(sample.getSampleName());
-			if (i > 0) {
-				out.append("<p>");
-			}
-			out.append(sampleName);
+	private final static String[] sampleNames(Pad padElement) {
+		final String[] names = new String[padElement.getLayerNumber()];
+		for (int i = 0; i < names.length; i++) {
+			names[i] = padElement.getLayer(i).getSampleName().trim();
 		}
-		out.append("</html>");
-		return out.toString();
-	}
-
-	private static String shorten(String name) {
-		if (name.length() > 11) {
-			return name.substring(0, 5) + "..." + name.substring(10);
-		}
-		return name;
+		return names;
 	}
 
 	private JTabbedPane makeSlidersArea() {
 		final JTabbedPane sliders = new JTabbedPane();
-		sliders.setFont(SMALL_FONT);
 		sliders.setPreferredSize(new Dimension(200, 400));
 		for (int i = 0; i < profile.getSliderNumber(); i++) {
 			sliders.addTab("Slider" + (i + 1), makeSliderArea(pgm, i));
@@ -565,7 +545,7 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 				public void make() {
 					final String layerLabel = "Sample Layer " + (layerIndex + 1);
 					final JLabel title = new JLabel(layerLabel, JLabel.CENTER);
-					title.setFont(FONT);
+					title.putClientProperty("FlatLaf.styleClass", "h4");
 					add(title);
 					setLayout(new GridLayout(7, 1, 5, 0));
 					super.makeParameters();
@@ -573,10 +553,10 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 					// play/remove buttons
 					final JPanel layerButtons = new JPanel(new FlowLayout(2, 0, 0));
 					final JButton playButton = new JButton("Play");
-					playButton.setFont(MEDIUM_FONT);
+					playButton.putClientProperty("FlatLaf.styleClass", "small");
 					layerButtons.add(playButton);
 					final JButton removeButton = new JButton("Clear");
-					removeButton.setFont(MEDIUM_FONT);
+					removeButton.putClientProperty("FlatLaf.styleClass", "small");
 					layerButtons.add(removeButton);
 					final ActionListener actionListener = new ActionListener() {
 
@@ -638,7 +618,6 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 	 */
 	private Component makeFiltersArea(Pad pad) {
 		final JTabbedPane sliders = new JTabbedPane();
-		sliders.setFont(SMALL_FONT);
 		sliders.setPreferredSize(new Dimension(200, 400));
 		for (int i = 0; i < profile.getFilterNumber(); i++) {
 			sliders.addTab("Filter" + (i + 1), makePadArea(pad.getFilter(i)));
@@ -674,7 +653,7 @@ public class ProgramPanel extends JPanel implements BindingCapable {
 			add(widget, BorderLayout.CENTER);
 
 			final JButton allPads = new JButton("All pads");
-			allPads.setFont(SMALL_FONT);
+			allPads.putClientProperty("FlatLaf.styleClass", "small");
 			allPads.setToolTipText("Set " + widget.getLabel() + " to this value on every pad");
 			allPads.addActionListener(new ActionListener() {
 

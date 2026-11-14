@@ -1,6 +1,8 @@
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.net.URL;
 
 import javax.swing.ImageIcon;
@@ -8,6 +10,10 @@ import javax.swing.JLabel;
 import javax.swing.JWindow;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import com.mpcmaid.gui.BaseFrame;
 import com.mpcmaid.gui.MainFrame;
@@ -100,20 +106,40 @@ public final class MPCMaid {
 	}
 
 	public static final boolean isMacOsX() {
-		return System.getProperty("mrj.version") != null;
+		return System.getProperty("os.name").toLowerCase().startsWith("mac");
+	}
+
+	/**
+	 * @return true if macOS is set to the dark appearance
+	 */
+	private static boolean isMacDarkMode() {
+		try {
+			final Process process = new ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start();
+			final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			final String style = reader.readLine();
+			process.waitFor();
+			return "Dark".equalsIgnoreCase(style);
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	public static final void makeAsNativeAsPossible() {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) {
+		final boolean mac = isMacOsX();
+		if (mac) {
+			// has to be set before AWT starts
+			System.setProperty("apple.laf.useScreenMenuBar", "true");
+			System.setProperty("apple.awt.application.name", "MPC Maid");
+			System.setProperty("apple.awt.application.appearance", "system");
 		}
 		try {
-			if (isMacOsX()) {
-				System.setProperty("apple.laf.useScreenMenuBar", "true");
-				System.setProperty("com.apple.mrj.application.apple.menu.about.name", "MPC Maid");
+			if (mac) {
+				UIManager.setLookAndFeel(isMacDarkMode() ? new FlatMacDarkLaf() : new FlatMacLightLaf());
+			} else {
+				UIManager.setLookAndFeel(new FlatLightLaf());
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		try {
 			Preferences.getInstance().load();

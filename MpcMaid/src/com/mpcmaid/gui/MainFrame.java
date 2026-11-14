@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FileDialog;
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -61,10 +60,6 @@ public final class MainFrame extends BaseFrame {
 	private static final String UNTITLED_TEMPLATE = "Untitled.pgm";
 
 	private static final int FILE_MAX_LENGTH = 16;
-
-	private static final Font SMALL_FONT = new Font("Verdana", Font.PLAIN, 8);
-
-	private static final Font MEDIUM_FONT = new Font("Verdana", Font.PLAIN, 10);
 
 	protected int selectedPad = 0;
 
@@ -474,7 +469,7 @@ public final class MainFrame extends BaseFrame {
 		final JLabel explanations = new JLabel(
 				"Shortcuts: Left-Right: Prev-Next Marker  \t  Alt/Shift+Left/Right: Nudge Marker  \t  Space: Play Marker  \t  Backspace/Delete: Delete Marker \t  Enter: Insert Marker",
 				JLabel.CENTER);
-		explanations.setFont(MEDIUM_FONT);
+		explanations.putClientProperty("FlatLaf.styleClass", "small");
 		bottom.add(explanations, BorderLayout.SOUTH);
 		final JLabel currentMarkerLocation = new JLabel(" - ", JLabel.CENTER);
 		bottom.add(currentMarkerLocation, BorderLayout.NORTH);

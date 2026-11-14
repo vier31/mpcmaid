@@ -1,6 +1,5 @@
 package com.mpcmaid.gui;
 
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -30,8 +29,6 @@ import com.mpcmaid.pgm.Parameter.Type;
  * @author cyrille martraire
  */
 public abstract class Widget extends JPanel implements ActionListener, FocusListener, BindingCapable {
-
-	private static final Font MEDIUM_FONT = new Font("Verdana", Font.PLAIN, 12);
 
 	protected final Element element;
 
@@ -66,7 +63,6 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 
 	protected void setupLabel(Parameter parameter) {
 		final JLabel label = new JLabel(parameter.getLabel() + ":", JLabel.RIGHT);
-		label.setFont(MEDIUM_FONT);
 		add(label);
 	}
 
@@ -132,7 +128,6 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 		protected void setupValue() {
 			value = new JTextField("", 4);
 			value.setAlignmentX(LEFT_ALIGNMENT);
-			value.setFont(MEDIUM_FONT);
 			add(value);
 
 			getTextField().addActionListener(this);
@@ -172,7 +167,6 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 		protected void setupValue() {
 			value = new JTextField("", 4);
 			value.setAlignmentX(LEFT_ALIGNMENT);
-			value.setFont(MEDIUM_FONT);
 			add(value);
 
 			getTextField().addActionListener(this);
@@ -213,12 +207,10 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 		protected void setupValue() {
 			value = new JTextField("", 2);
 			value.setAlignmentX(LEFT_ALIGNMENT);
-			value.setFont(MEDIUM_FONT);
 			add(value);
 
 			value2 = new JTextField("", 2);
 			value2.setAlignmentX(LEFT_ALIGNMENT);
-			value2.setFont(MEDIUM_FONT);
 			add(value2);
 
 			getTextField().addActionListener(this);
@@ -295,7 +287,6 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 			final EnumType type = (EnumType) parameter.getType();
 			value = new JComboBox(type.getValues());
 			value.setAlignmentX(LEFT_ALIGNMENT);
-			value.setFont(MEDIUM_FONT);
 			add(value);
 
 			getComboBox().addActionListener(this);
@@ -341,7 +332,6 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 		protected void setupValuePost() {
 			value = new JComboBox(values);
 			value.setAlignmentX(LEFT_ALIGNMENT);
-			value.setFont(MEDIUM_FONT);
 			add(value);
 
 			getComboBox().addActionListener(this);
@@ -386,7 +376,6 @@ public abstract class Widget extends JPanel implements ActionListener, FocusList
 		protected void setupValue() {
 			value = new JTextField("", 4);
 			value.setAlignmentX(LEFT_ALIGNMENT);
-			value.setFont(MEDIUM_FONT);
 			add(value);
 
 			getTextField().addActionListener(this);
